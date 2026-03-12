@@ -1,5 +1,9 @@
 # Tequel
 
+![Crates.io Version](https://img.shields.io/crates/v/tequel-rs?style=flat-square&color=orange)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+![Rust](https://img.shields.io/badge/rust-v1.70%2B-black?style=flat-square&logo=rust)
+
 *For educacional purposes only, but still usable.*
 
 *A authenticated simetric encrypt engine (AEAD) built in Rust.*
