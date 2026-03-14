@@ -1,6 +1,9 @@
 use tequel_rs::hash::TequelHash;
 use tequel_rs::encrypt::TequelEncrypt;
 use tequel_rs::error::TequelError;
+use tequel_rs::rng::TequelRng;
+
+use std::collections::HashMap;
 
 #[test]
 fn test_dif_hash_is_different_from_string() {
@@ -135,3 +138,18 @@ fn test_tequel_stress_loop_100() {
     
     println!("🔥 100/100 Loop test done! Tequel is solid.");
 }
+
+
+
+#[test]
+fn test_avalanche_effect() {
+
+    let mut teq_hash = TequelHash::new();
+
+    let hash1 = teq_hash.dt_hash_bytes(b"Gabriel");
+    let hash2 = teq_hash.dt_hash_bytes(b"gabriel");
+
+    assert_ne!(hash1, hash2);
+
+}
+

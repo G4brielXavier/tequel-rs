@@ -1,5 +1,5 @@
 
-use std::{time::SystemTime};
+use std::{time::SystemTime, vec};
 use getrandom::getrandom;
 
 
@@ -7,11 +7,10 @@ use getrandom::getrandom;
 /// TequelRng is a struct that controls RNG functions. <br><br>
 /// As:
 /// - `rand_by_nano`
-/// - `rand_deep_u32`
-/// - `rand_deep_u64`
+/// - `rand_deep_string`
+/// - `rand_weak_u32`
 /// - `rand_lgc`
 /// - `rand_in_range_by_deep`
-/// - `rand_in_range_by_nano`
 pub struct TequelRng {}
 
 impl TequelRng {
@@ -23,30 +22,23 @@ impl TequelRng {
     // RNG by Nano seconds
 
     /// Generates a set of numbers using **Nano Seconds** + **Constants**
-    pub fn rand_by_nano(&self) -> u32{
-
-        let mut state_a: u32 = 0x71374491;
-        let mut state_b: u32 = 0x5be0cd19;
-        let mut state_c: u32 = 0x5be0cd19;
-        let mut state_d: u32 = 0x5be0cd19;
+    pub fn rand_by_nano(&self) -> String {
 
         let now = SystemTime::now();
 
-
         if let Ok(dur) = now.duration_since(SystemTime::UNIX_EPOCH) {
             let nanos = dur.subsec_nanos();
-            let bytes_nanos = nanos.to_be_bytes();
+            let mut bytes_nanos = nanos.to_be_bytes();
 
-            for &byte in bytes_nanos.iter() {
-                state_a = state_a.wrapping_add(byte as u32);
-                state_b = (state_b ^ state_a).rotate_left(13);
-                state_c = state_c.wrapping_add(state_b);
-                state_d = (state_d ^ state_c).rotate_left(18);
+            for (i, byte) in bytes_nanos.iter_mut().enumerate() {
+                let magic = [0x6a, 0x09, 0xe6, 0x67, 0xbb, 0x67, 0xae, 0x85];
+                *byte = byte.wrapping_add(magic[i % magic.len()]).rotate_left(5);
             }
 
+            return bytes_nanos.iter().map(|b| format!("{:02x}", b)).collect::<String>()
         };
         
-        state_d
+        "".to_string()
     }
 
 
@@ -54,23 +46,29 @@ impl TequelRng {
 
     // RNG by SO/Hardware
 
-    /// Generates a random `u32` from hardware trash.  
-    pub fn rand_deep_u32(&self) -> u32 {
+    /// Generates a set of numbers and letters with custom length delivered. It returs a ``String``
+    pub fn rand_deep_string(&self, len: usize) -> String {
 
+        let mut buffer = vec![0u8; len];
+        getrandom(&mut buffer).unwrap();
+
+        for (i, byte) in buffer.iter_mut().enumerate() {
+            let magic = [0x6a, 0x09, 0xe6, 0x67, 0xbb, 0x67, 0xae, 0x85];
+            *byte = byte.wrapping_add(magic[i % magic.len()]).rotate_left(3);
+        }
+
+        buffer.iter().map(|b| format!("{:02x}", b)).collect()
+
+    }
+
+    /// Generates a set of random `u32` from hardware byte noises.
+    pub fn rand_u32(&self) -> u32 {
+        
         let mut buffer = [0u8; 4];
+
         getrandom(&mut buffer).unwrap();
 
         u32::from_ne_bytes(buffer)
-    }
-
-    /// Generates a random `u64` from hardware trash.
-    pub fn rand_deep_u64(&self) -> u64 {
-        
-        let mut buffer = [0u8; 8];
-
-        getrandom(&mut buffer).unwrap();
-
-        u64::from_ne_bytes(buffer)
 
     }
 
@@ -94,29 +92,14 @@ impl TequelRng {
 
     // In range
     
-    /// Generates a random `u32` between `min` and `max` using `rand_deep_u32`.
-    pub fn rand_in_range_by_deep(&self, min: u32, max: u32) -> u32 {
+    /// Generates a random `u32` between `min` and `max` using `rand_u32`.
+    pub fn rand_range(&self, min: u32, max: u32) -> u32 {
 
         let range = max - min + 1;
         let limit = u32::MAX - (u32::MAX % range);
 
         loop {
-            let res = self.rand_deep_u32();
-            if res < limit {
-                return min + (res % range);
-            }
-        }
-
-    }
-
-    /// Generates a random `u32` between `min` and `max` using `rand_by_nano`.
-    pub fn rand_in_range_by_nano(&self, min: u32, max: u32) -> u32 {
-
-        let range = max - min + 1;
-        let limit = u32::MAX - (u32::MAX % range);
-
-        loop {
-            let res = self.rand_by_nano();
+            let res = self.rand_u32();
             if res < limit {
                 return min + (res % range);
             }
